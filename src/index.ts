@@ -34,6 +34,7 @@ interface State<T extends DocumentData> {
   isStart: boolean;
   isEnd: boolean;
   limit: number;
+  currentPage: number;
 }
 
 type ActionBase<K, V = void> = V extends void ? { type: K } : { type: K } & V;
@@ -77,6 +78,7 @@ const getReducer =
           firstDocRef,
           limit: limitNum,
           isLoading: true,
+          currentPage: 1,
         };
       }
 
@@ -117,6 +119,7 @@ const getReducer =
           items,
           isStart: (firstDoc && firstDocRef?.current && snapshotEqual(firstDoc, firstDocRef.current)) || false,
           isEnd: items.length < state.limit,
+          currentPage: state.currentPage,
         };
       }
 
@@ -125,6 +128,7 @@ const getReducer =
           ...state,
           isLoading: true,
           query: state.nextQuery,
+          currentPage: state.currentPage + 1,
         };
       }
 
@@ -133,6 +137,7 @@ const getReducer =
           ...state,
           isLoading: true,
           query: state.prevQuery,
+          currentPage: state.currentPage - 1,
         };
       }
 
@@ -157,6 +162,7 @@ const initialState = {
   isStart: true,
   isEnd: false,
   limit: 10,
+  currentPage: 1,
 };
 
 const usePagination = <T extends DocumentData>(firestoreQuery: Query, options: PaginationOptions) => {
@@ -209,6 +215,7 @@ const usePagination = <T extends DocumentData>(firestoreQuery: Query, options: P
     isEnd: state.isEnd,
     getPrev: () => dispatch({ type: 'PREV' }),
     getNext: () => dispatch({ type: 'NEXT' }),
+    currentPage: state.currentPage,
   };
 };
 
