@@ -24,64 +24,55 @@ and [Firestore](https://firebase.google.com/docs/firestore/). You can see it liv
 
 ```jsx
 import React from 'react';
-import Grid from "@material-ui/core/Grid";
-import PerfumeCard from "./search/PerfumeCard";
-import { usePagination } from "use-pagination-firestore";
-import Loading from "./Loading";
-import {
-    NavigateNext as NavgateNextIcon,
-    NavigateBefore as NavigateBeforeIcon
-} from '@material-ui/icons';
-import { IconButton } from "@material-ui/core";
-import { initializeApp } from "firebase/app";
-import { getFirestore, collection, query, orderBy } from "firebase/firestore";
+import Grid from '@material-ui/core/Grid';
+import PerfumeCard from './search/PerfumeCard';
+import { usePagination } from 'use-pagination-firestore';
+import Loading from './Loading';
+import { NavigateNext as NavgateNextIcon, NavigateBefore as NavigateBeforeIcon } from '@material-ui/icons';
+import { IconButton } from '@material-ui/core';
+import { initializeApp } from 'firebase/app';
+import { getFirestore, collection, query, orderBy } from 'firebase/firestore';
 
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 
 const RecentPerfumes = () => {
-    const {
-        items,
-        isLoading,
-        isStart,
-        isEnd,
-        getPrev,
-        getNext,
-    } = usePagination<Perfume>(
-        query(collection(db, "/perfumes"), orderBy("updated", "desc")),
-        {
-            limit: 10
-        }
-    );
+  const { items, isLoading, isStart, isEnd, getPrev, getNext } =
+    usePagination <
+    Perfume >
+    (query(collection(db, '/perfumes'), orderBy('updated', 'desc')),
+    {
+      limit: 10,
+    });
 
-    if (isLoading) {
-        return <Loading/>;
-    }
+  if (isLoading) {
+    return <Loading />;
+  }
 
-    return (
-        <Grid container>
-            <Grid item xs={12}>
-                <Grid container justify="flex-end">
-                    <Grid item>
-                        <IconButton onClick={getPrev} disabled={isStart}>
-                            <NavigateBeforeIcon/>
-                        </IconButton>
-                        <IconButton onClick={getNext} disabled={isEnd}>
-                            <NavgateNextIcon/>
-                        </IconButton>
-                    </Grid>
-                </Grid>
-            </Grid>
-            {items.map((perfume, idx) => {
-                return (
-                    <Grid item xs={12} sm={12} md={6} lg={6} key={`recent-perfume-${idx}`}>
-                        <PerfumeCard perfume={perfume} size="medium"/>
-                    </Grid>
-                );
-            })}
+  return (
+    <Grid container>
+      <Grid item xs={12}>
+        <Grid container justify="flex-end">
+          <Grid item>
+            <IconButton onClick={getPrev} disabled={isStart}>
+              <NavigateBeforeIcon />
+            </IconButton>
+            <IconButton onClick={getNext} disabled={isEnd}>
+              <NavgateNextIcon />
+            </IconButton>
+          </Grid>
         </Grid>
-    );
-}
+      </Grid>
+      {items.map((perfume, idx) => {
+        return (
+          <Grid item xs={12} sm={12} md={6} lg={6} key={`recent-perfume-${idx}`}>
+            <PerfumeCard perfume={perfume} size="medium" />
+          </Grid>
+        );
+      })}
+    </Grid>
+  );
+};
 
 export default RecentPerfumes;
 ```
@@ -141,8 +132,9 @@ const RecentPerfumes = () => {
     );
 }
 ```
+
 ## Caveats
 
 Paginating Firestore documents relies on [query cursors](https://firebase.google.com/docs/firestore/query-data/query-cursors). It's not easy to know
 ahead of time how many documents exist in a collection. Consequently, if your `document_count % page_size` is `0` you will notice that your last page
-is empty – this is because this hook doesn't (currently) look ahead to know if there are any more documents. 
+is empty – this is because this hook doesn't (currently) look ahead to know if there are any more documents.
