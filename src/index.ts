@@ -29,7 +29,7 @@ interface State<T extends DocumentData> {
   lastDoc: QueryDocumentSnapshot | undefined;
   prevQuery: Query | undefined;
   nextQuery: Query | undefined;
-  items: (T & Pick<DocumentSnapshot, 'id'>)[];
+  items: (T & Pick<DocumentSnapshot, 'id'> & { path: DocumentSnapshot['ref']['path'] })[];
   isLoading: boolean;
   isStart: boolean;
   isEnd: boolean;
@@ -89,6 +89,7 @@ const getReducer =
         const items = docs.map((doc) => ({
           ...(doc.data() as T),
           id: doc.id,
+          path: doc.ref.path,
         }));
 
         const firstDoc = docs[0];
