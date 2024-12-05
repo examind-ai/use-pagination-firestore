@@ -1,5 +1,5 @@
 {
-  "name": "use-pagination-firestore",
+  "name": "@examind/use-pagination-firestore",
   "version": "0.6.0",
   "description": "A non-cumulative pagination hook for use with Firestore",
   "main": "lib/index.js",
