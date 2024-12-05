@@ -12,7 +12,7 @@ import {
   limitToLast,
   onSnapshot,
   query,
-  startAfter
+  startAfter,
 } from 'firebase/firestore';
 
 export interface PaginationOptions {
@@ -29,11 +29,12 @@ interface State<T extends DocumentData> {
   lastDoc: QueryDocumentSnapshot | undefined;
   prevQuery: Query | undefined;
   nextQuery: Query | undefined;
-  items: (T & Pick<DocumentSnapshot, 'id'>)[];
+  items: (T & Pick<DocumentSnapshot, 'id'> & { path: DocumentSnapshot['ref']['path'] })[];
   isLoading: boolean;
   isStart: boolean;
   isEnd: boolean;
   limit: number;
+  currentPage: number;
 }
 
 type ActionBase<K, V = void> = V extends void ? { type: K } : { type: K } & V;
@@ -64,80 +65,88 @@ type Action =
 
 const defaultGuard = <S>(state: S, a: never) => state;
 
-const getReducer = <T extends DocumentData>() => (state: State<T>, action: Action): State<T> => {
-  switch (action.type) {
-    case 'SET-QUERY': {
-      const { query: queryObj, queryRef, firstDocRef, limit: limitNum } = action.payload;
-      return {
-        ...state,
-        query: query(queryObj, limit(limitNum)),
-        queryRef,
-        firstDocRef,
-        limit: limitNum,
-        isLoading: true,
-      };
-    }
-
-    case 'LOAD': {
-      const { value } = action.payload;
-      const docs = value.docs;
-
-      const items = docs.map((doc) => ({
-        ...(doc.data() as T),
-        id: doc.id,
-      }));
-
-      
-
-      const firstDoc = docs[0];
-      const lastDoc = docs[docs.length - 1];
-      const queryFromRef = state.queryRef ? state.queryRef.current : undefined;
-      const prevQuery =
-        queryFromRef && firstDoc ? query(queryFromRef, endBefore(firstDoc), limitToLast(state.limit)) : state.lastQuery;
-      const nextQuery = queryFromRef && lastDoc ? query(queryFromRef, startAfter(lastDoc), limit(state.limit)) : state.nextQuery;
-      
-      const firstDocRef = state.firstDocRef;
-      if (firstDocRef && firstDocRef.current === undefined) {
-        firstDocRef.current = firstDoc;
+const getReducer =
+  <T extends DocumentData>() =>
+  (state: State<T>, action: Action): State<T> => {
+    switch (action.type) {
+      case 'SET-QUERY': {
+        const { query: queryObj, queryRef, firstDocRef, limit: limitNum } = action.payload;
+        return {
+          ...state,
+          query: query(queryObj, limit(limitNum)),
+          queryRef,
+          firstDocRef,
+          limit: limitNum,
+          isLoading: true,
+          currentPage: 1,
+        };
       }
 
-      return {
-        ...state,
-        docs,
-        lastQuery: items.length > 0 ? state.query : undefined,
-        isLoading: false,
-        firstDoc,
-        firstDocRef,
-        lastDoc,
-        prevQuery,
-        nextQuery,
-        items,
-        isStart: (firstDoc && firstDocRef?.current && snapshotEqual(firstDoc, firstDocRef.current)) || false,
-        isEnd: items.length < state.limit,
-      };
-    }
+      case 'LOAD': {
+        const { value } = action.payload;
+        const docs = value.docs;
 
-    case 'NEXT': {
-      return {
-        ...state,
-        isLoading: true,
-        query: state.nextQuery,
-      };
-    }
+        const items = docs.map((doc) => ({
+          ...(doc.data() as T),
+          id: doc.id,
+          path: doc.ref.path,
+        }));
 
-    case 'PREV': {
-      return {
-        ...state,
-        isLoading: true,
-        query: state.prevQuery,
-      };
-    }
+        const firstDoc = docs[0];
+        const lastDoc = docs[docs.length - 1];
+        const queryFromRef = state.queryRef ? state.queryRef.current : undefined;
+        const prevQuery =
+          queryFromRef && firstDoc
+            ? query(queryFromRef, endBefore(firstDoc), limitToLast(state.limit))
+            : state.lastQuery;
+        const nextQuery =
+          queryFromRef && lastDoc ? query(queryFromRef, startAfter(lastDoc), limit(state.limit)) : state.nextQuery;
 
-    default: {
-      return defaultGuard(state, action);
+        const firstDocRef = state.firstDocRef;
+        if (firstDocRef && firstDocRef.current === undefined) {
+          firstDocRef.current = firstDoc;
+        }
+
+        return {
+          ...state,
+          docs,
+          lastQuery: items.length > 0 ? state.query : undefined,
+          isLoading: false,
+          firstDoc,
+          firstDocRef,
+          lastDoc,
+          prevQuery,
+          nextQuery,
+          items,
+          isStart: (firstDoc && firstDocRef?.current && snapshotEqual(firstDoc, firstDocRef.current)) || false,
+          isEnd: items.length < state.limit,
+          currentPage: state.currentPage,
+        };
+      }
+
+      case 'NEXT': {
+        return {
+          ...state,
+          isLoading: true,
+          query: state.nextQuery,
+          currentPage: state.currentPage + 1,
+        };
+      }
+
+      case 'PREV': {
+        return {
+          ...state,
+          isLoading: true,
+          query: state.prevQuery,
+          currentPage: state.currentPage - 1,
+        };
+      }
+
+      default: {
+        return defaultGuard(state, action);
+      }
     }
-  }
-};
+  };
 
 const initialState = {
   query: undefined,
@@ -154,6 +163,7 @@ const initialState = {
   isStart: true,
   isEnd: false,
   limit: 10,
+  currentPage: 1,
 };
 
 const usePagination = <T extends DocumentData>(firestoreQuery: Query, options: PaginationOptions) => {
@@ -177,7 +187,7 @@ const usePagination = <T extends DocumentData>(firestoreQuery: Query, options: P
           query: firestoreQuery,
           queryRef,
           firstDocRef,
-          limit: limitOpt
+          limit: limitOpt,
         },
       });
     }
@@ -206,6 +216,7 @@ const usePagination = <T extends DocumentData>(firestoreQuery: Query, options: P
     isEnd: state.isEnd,
     getPrev: () => dispatch({ type: 'PREV' }),
     getNext: () => dispatch({ type: 'NEXT' }),
+    currentPage: state.currentPage,
   };
 };
 
