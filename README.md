@@ -140,3 +140,9 @@ const RecentPerfumes = () => {
 Paginating Firestore documents relies on [query cursors](https://firebase.google.com/docs/firestore/query-data/query-cursors). It's not easy to know
 ahead of time how many documents exist in a collection. Consequently, if your `document_count % page_size` is `0` you will notice that your last page
 is empty – this is because this hook doesn't (currently) look ahead to know if there are any more documents.
+
+## Publish
+
+- Bump version in package.json
+- `npm install`
+- Commit with message: `Release {version, e.g. 0.1.6}`
